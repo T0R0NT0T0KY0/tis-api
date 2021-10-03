@@ -6,8 +6,8 @@ import java.util.Objects;
 
 public class UserResources {
 	public static boolean registration (UsersDTO newUser) {
-//		PostgresqlConnection.q(
-//				String.format("INSERT INTO USERS %s", newUser.getNickName()));
-		return Objects.nonNull(newUser.getNickName());
+		return Objects.nonNull(PostgresqlConnection.q(
+				String.format("INSERT INTO users (user_name, nickname, active_type) " +
+						"values (%s, %s, %s)", newUser.getUserName(),newUser.getNickName(), newUser.getUserActiveTypeDTO())));
 	}
 }
