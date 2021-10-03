@@ -9,7 +9,7 @@ public class Envs {
 
 	static {
 		try {
-			ENVS.load(new FileReader("src/main/resources/properties/application.properties"));
+			ENVS.load(new FileReader("src/main/resources/application.properties"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -56,7 +56,7 @@ public class Registration extends HttpServlet {
 		}
 
 		UsersDTO user = new UsersDTO(userName, nickName, email, UserActiveTypeDTO.NOT_CONFIRMED);
-		boolean registration = UserResources.registration(user);
+		Object registration = UserResources.registration(user);
 		PrintWriter writer = resp.getWriter();
 		writer.println(JSON_Parser.stringify(user));
 		writer.close();

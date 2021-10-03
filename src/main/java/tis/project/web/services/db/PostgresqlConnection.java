@@ -14,14 +14,11 @@ public class PostgresqlConnection {
 					Envs.getENV("db_pg_password"));
 		} catch (SQLException throwables) {
 			throwables.printStackTrace();
+			System.exit(1);
 		}
 	}
-	public static PreparedStatement q (String statement) {
-		try {
-			return connection.prepareStatement(statement);
-		} catch (SQLException troubles) {
-			troubles.printStackTrace();
-		}
-		return null;
+
+	public static Connection getConnection () {
+		return connection;
 	}
 }

@@ -23,10 +23,6 @@ public class UsersDTO {
 		this.createdAt = new Timestamp(new Date().getTime());
 	}
 
-	public UserActiveTypeDTO getUserActiveTypeDTO() {
-		return userActiveTypeDTO;
-	}
-
 	@Override
 	public String toString() {
 

@@ -1,4 +1,5 @@
 create type active_type as enum ('AUTHORIZED', 'NOT_CONFIRMED', 'DELETED', 'FROZEN');
+create extension if not exists "uuid-ossp";
 
 create table users
 (
