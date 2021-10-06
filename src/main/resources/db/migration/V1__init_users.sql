@@ -3,7 +3,6 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 create extension if not exists "uuid-ossp";
 
 
-alter table users DROP column login;
 create table users
 (
     id          serial primary key,
@@ -54,4 +53,16 @@ create table users_info
     country    text      default '',
     about      text      default '',
     updated_at timestamp default now()
-)
+);
+
+create view view_users (user_id, user_name, nickname, active_type, email, phone, city, country)
+as select ui.user_id,
+          u.user_name,
+          u.nickname,
+          u.active_type,
+          ui.email,
+          ui.phone,
+          ui.city,
+          ui.country
+from users u
+join users_info ui on u.id = ui.user_id;

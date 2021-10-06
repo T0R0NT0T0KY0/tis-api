@@ -13,7 +13,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Objects;
 
@@ -42,8 +41,8 @@ public class Registration extends HttpServlet {
 		if (!email.matches(".+@.+\\..+")) {
 			resp.sendError(400, """
 					{"err": {
-					"error": "incorrect email",\s
-					"localization": "Некорректная электронная почта"}}""");
+						"error": "incorrect email",
+						"localization": "Некорректная электронная почта"}}""");
 			return;
 		}
 
@@ -60,26 +59,33 @@ public class Registration extends HttpServlet {
 
 		UsersDTO user = new UsersDTO(userName, nickName, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
 
-		if (!UserResources.isUniqueEmail(email)) {
+		if (!UserResources.isUnique(email, "email")) {
 			resp.sendError(400, """
 					{"err": {
-					"description": "not unique email",\s
-					"localization": "почта уже используется"}}""");
+						"description": "not unique email",
+						"localization": "почта уже используется"}}""");
+			return;
+		}
+
+		if (!UserResources.isUnique(nickName, "nickname")) {
+			resp.sendError(400, """
+					{"err": {
+						"description": "not unique nickname",
+						"localization": "nickname уже используется"}}""");
 			return;
 		}
 
 		String token = UserResources.registration(user);
+		logger.info(token);
+		if (token.length()<1) {
+			resp.sendError(400, """
+					{"err": {
+						"description": "noname error",
+						"localization": "неизвестная ошибка"}}""");
+			return;
+		}
 		resp.addCookie(new Cookie("Authorization", token));
 		resp.addCookie(new Cookie("Login", email));
-		PrintWriter writer = resp.getWriter();
-		writer.println("""
-	{
-        data: {
-            username: 
-        }
-	}
-			""");
-		writer.close();
 		resp.setStatus(200);
 	}
 }

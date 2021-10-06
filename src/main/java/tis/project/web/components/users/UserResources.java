@@ -30,13 +30,14 @@ public class UserResources {
 		}
 	}
 
-	public static boolean isUniqueEmail(String email) {
+	public static boolean isUnique(String value, String type) {
 		try {
 			PreparedStatement pg = PostgresqlConnection.getConnection()
 					.prepareStatement("""
-							SELECT count(user_id)=0 as exist from users_info
-							where email = ?""");
-			pg.setObject(1, email);
+							SELECT count(user_id)=0 as exist from view_users
+							where ? = ?""");
+			pg.setObject(1, type);
+			pg.setObject(1, value);
 			ResultSet resultSet = pg.executeQuery();
 			resultSet.next();
 			return resultSet.getBoolean("exist");
@@ -44,6 +45,7 @@ public class UserResources {
 			return false;
 		}
 	}
+
 
 	private static String addUserPass(UsersDTO newUser, long userId) throws SQLException {
 		PreparedStatement pg = PostgresqlConnection.getConnection()
