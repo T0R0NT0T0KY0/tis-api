@@ -3,10 +3,6 @@ package migration;
 import org.flywaydb.core.Flyway;
 import tis.project.web.Envs;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Properties;
-
 public class Migration {
 	public static void main(String[] args) {
 

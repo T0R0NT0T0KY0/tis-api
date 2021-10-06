@@ -1,17 +1,22 @@
 package tis.project.web;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
 
 public class Envs {
-	private static final Properties ENVS = new Properties();
+	private static final Logger logger = LoggerFactory.getLogger("Environments variables");
 
+	private static final Properties ENVS = new Properties();
 	static {
 		try {
-			ENVS.load(new FileReader("src/main/resources/application.properties"));
+			ENVS.load(Envs.class.getClassLoader().getResourceAsStream("application.properties"));
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage(), e);
+			throw new RuntimeException(e);
 		}
 	}
 

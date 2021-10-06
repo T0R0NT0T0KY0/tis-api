@@ -1,4 +1,4 @@
-package tis.project.web.servlets.users;
+package tis.project.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
