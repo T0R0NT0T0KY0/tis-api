@@ -30,19 +30,18 @@ public class UserResources {
 		}
 	}
 
-	public static boolean isUnique(String value, String type) {
+	public static boolean isNotUnique(String value, String type) {
 		try {
 			PreparedStatement pg = PostgresqlConnection.getConnection()
 					.prepareStatement("""
-							SELECT count(user_id)=0 as exist from view_users
-							where ? = ?""");
-			pg.setObject(1, type);
+							SELECT count(user_id)!=0 as exist from view_users
+							where ? =""" + type);
 			pg.setObject(1, value);
 			ResultSet resultSet = pg.executeQuery();
 			resultSet.next();
 			return resultSet.getBoolean("exist");
 		} catch (SQLException e) {
-			return false;
+			return true;
 		}
 	}
 
@@ -61,15 +60,16 @@ public class UserResources {
 	}
 
 
-	private static void addUserEmail(UsersDTO newUser, long userId) throws SQLException {
+	private static String addUserEmail(UsersDTO newUser, long userId) throws SQLException {
 		PreparedStatement pg = PostgresqlConnection.getConnection()
 				.prepareStatement("""
 						INSERT INTO users_info (user_id, email)
-						values (?, ?)""");
+						values (?, ?) returning email""");
 		pg.setObject(1, userId);
 		pg.setObject(2, newUser.getEmail());
 		ResultSet resultSet = pg.executeQuery();
 		resultSet.next();
+		return resultSet.getString("email");
 	}
 
 
