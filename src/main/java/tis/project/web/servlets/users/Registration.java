@@ -59,13 +59,6 @@ public class Registration extends HttpServlet {
 
 		UsersDTO user = new UsersDTO(userName, nickName, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
 
-		if (!UserResources.isUnique(email, "email")) {
-			resp.sendError(400, """
-					{"err": {
-						"description": "not unique email",
-						"localization": "почта уже используется"}}""");
-			return;
-		}
 
 		if (!UserResources.isUnique(nickName, "nickname")) {
 			resp.sendError(400, """
@@ -74,6 +67,15 @@ public class Registration extends HttpServlet {
 						"localization": "nickname уже используется"}}""");
 			return;
 		}
+
+		if (!UserResources.isUnique(email, "email")) {
+			resp.sendError(400, """
+					{"err": {
+						"description": "not unique email",
+						"localization": "почта уже используется"}}""");
+			return;
+		}
+
 
 		String token = UserResources.registration(user);
 		logger.info(token);
