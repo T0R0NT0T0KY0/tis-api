@@ -6,88 +6,122 @@ import tis.project.web.JSON_Parser;
 import tis.project.web.components.users.UserActiveTypeDTO;
 import tis.project.web.components.users.UserResources;
 import tis.project.web.components.users.UsersDTO;
+import tis.project.web.HttpError;
 
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.*;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Objects;
 
-@WebServlet(name = "registrationServlet", urlPatterns = "/registration")
+@WebServlet(name = "registrationServlet", urlPatterns = "/api/registration")
 public class Registration extends HttpServlet {
 	private static final Logger logger = LoggerFactory.getLogger(Registration.class);
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		Map<String, String> body = JSON_Parser.parse(req.getReader());
-		String userName = body.get("userName");
-		String nickName = body.get("nickName");
-		String password = body.get("password");
-		String email = body.get("email");
-		resp.setContentType("text/json");
-		body.forEach((s, s2) -> logger.info("{} {}", s, s2));
-		if (Objects.isNull(userName) || Objects.isNull(nickName) || Objects.isNull(email) || Objects.isNull(password)) {
-			resp.sendError(400, """
-					{"err": {
-					"error": "no data",\s
-					"localization": "не хватает данных"}}""");
+		Object[] validateData = validateData(body);
+
+		HttpError error = (HttpError) validateData[0];
+		if (Objects.nonNull(error)) {
+			resp.setContentType("json/http");
+			resp.sendError(error.getErrorCode(), JSON_Parser.stringify(error.getErrorObject()));
 			return;
 		}
 
-		// email validate
-		if (!email.matches(".+@.+\\..+")) {
-			resp.sendError(400, """
-					{"err": {
-						"error": "incorrect email",
-						"localization": "Некорректная электронная почта"}}""");
+		UsersDTO user = (UsersDTO) validateData[1];
+
+		HttpSession session = req.getSession();
+		String id = session.getId();
+
+		String[] registration = UserResources.registration(user, id);
+		if (Objects.nonNull(registration[0])) {
+			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Неизвестная ошибка",
+					registration[0])));
 			return;
 		}
 
-		// password validate
-		if (password.length() < 6) {
-			resp.sendError(400, """
-					{"err": {
-					"error": "incorrect password",\s
-					"description": "password length mast be more then 5",\s
-					"localization": "Некорректный пароль"}
-					"resolve": "Длина пароля должна быть больше 5 символов"}}""");
-			return;
-		}
-
-		UsersDTO user = new UsersDTO(userName, nickName, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
-
-
-		if (UserResources.isNotUnique(nickName, "nickname")) {
-			resp.sendError(400, """
-					{"err": {
-						"description": "not unique nickname",
-						"localization": "nickname уже используется"}}""");
-			return;
-		}
-
-		if (UserResources.isNotUnique(email, "email")) {
-			resp.sendError(400, """
-					{"err": {
-						"description": "not unique email",
-						"localization": "почта уже используется"}}""");
-			return;
-		}
-
-
-		String token = UserResources.registration(user);
-		logger.info("token {}", token);
-		if (token.length()<1) {
-			resp.sendError(400, """
-					{"err": {
-						"description": "noname error",
-						"localization": "неизвестная ошибка"}}""");
-			return;
-		}
-		resp.addCookie(new Cookie("Authorization", token));
-		resp.addCookie(new Cookie("Login", email));
+		session.setMaxInactiveInterval(-1);
+		session.setAttribute("Authorization_session", registration[1]);
+		session.setAttribute("userDTO", user);
+		resp.addCookie(new Cookie("Authorization", registration[1]));
+		resp.addCookie(new Cookie("Login", user.getEmail()));
+		PrintWriter writer = resp.getWriter();
+		writer.println("{ \"user_id\": " + user.getId() + "\"}");
 		resp.setStatus(200);
+	}
+
+
+	private Object[] validateData(Map<String, String> body) {
+		Object[] goList = new Object[2];
+		try {
+			String email = body.get("email");
+			String password = body.get("password");
+			String username = body.get("username");
+			String nickname = body.get("nickname");
+			goList[0] = validateData(username, nickname, password, email);
+			goList[1] = new UsersDTO(username, nickname, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
+		} catch (ClassCastException | NullPointerException err) {
+			goList[0] = new HttpError(400,
+					new HttpError.ErrorObject("Проблема с введенными данными", err.getLocalizedMessage()));
+			goList[1] = null;
+		}
+		return goList;
+	}
+
+	// mb with throw will be better see
+	// or on js like this
+	// return e1 ?? e2 ?? e3 ?? e4 ?? e5;
+	private HttpError validateData(String userName, String nickName, String password, String email) {
+		HttpError e1 = validateDataIsEmpty(userName, nickName, password, email);
+		if (Objects.nonNull(e1)) {return e1;}
+
+		HttpError e2 = validateEmail(email);
+		if (Objects.nonNull(e2)) {return e2;}
+
+		HttpError e3 = validatePassword(password);
+		if (Objects.nonNull(e3)) {return e3;}
+
+		HttpError e4 = validateUniqueNickname(nickName);
+		if (Objects.nonNull(e4)) {return e4;}
+
+		HttpError e5 = validateUniqueEmail(email);
+		if (Objects.nonNull(e5)) {return e5;}
+
+		return null;
+	}
+
+	private HttpError validateUniqueEmail(String email) {
+		return UserResources.isNotUnique(email, "email") ?
+				new HttpError(400, new HttpError.ErrorObject("Не уникальное поле email",
+						"email уже занят. Введите другой, или восстановите пароль")) : null;
+	}
+
+	private HttpError validateUniqueNickname(String nickname) {
+		return UserResources.isNotUnique(nickname, "nickname") ?
+				new HttpError(400, new HttpError.ErrorObject("Не уникальное поле nickname",
+						"Кто то уже занял такой же nickname")) : null;
+	}
+
+	private HttpError validatePassword(String password) {
+		return password.length() < 6 || !password.matches(".*\\d.*\\d.*\\d.*") ||
+				!password.matches(".*[a-z].*") || !password.matches(".*[A-Z].*") ?
+				new HttpError(400, new HttpError.ErrorObject("Легкий пароль",
+						"Пароль должен быть не коротким (длиной минимум в 5 символов).\n" +
+								"Состоять из минимум 4 цифр, 1 заглавной и 1 строчной латинских букв")) : null;
+	}
+
+	private HttpError validateDataIsEmpty(String userName, String nickName, String password, String email) {
+		return Objects.isNull(userName) || Objects.isNull(nickName) || Objects.isNull(email) || Objects.isNull(password) ?
+				new HttpError(400, new HttpError.ErrorObject("Нет данных", "Пустые поля")) :
+				null;
+	}
+
+	private HttpError validateEmail(String email) {
+		return !email.matches(".+@.+\\..+") ?
+				new HttpError(400, new HttpError.ErrorObject("Некорректный e-mail",
+						"введена некорректная электронная почта")) : null;
 	}
 }

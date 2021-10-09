@@ -8,24 +8,26 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 public class UserResources {
-	public static String registration(UsersDTO newUser) {
+	public static String[] registration(UsersDTO newUser, String sessionId) {
+		String[] goList = new String[2];
 		try {
 			long userId = createUser(newUser);
 			addUserPass(newUser, userId);
 			addUserEmail(newUser, userId);
-			return createToken(userId);
-		} catch (SQLException throwable) {
-			throwable.printStackTrace();
-			return "";
+			goList[1] = createToken(userId, sessionId);
+		} catch (SQLException err) {
+			err.printStackTrace();
+			goList[0] = err.getLocalizedMessage();
 		}
+		return goList;
 	}
 
-	public static String login(String email, String password) {
+	public static String login(String email, String password, String sessionId) {
 		try {
 			long userId = getUserIdByEmail(email);
-			return verificationUserWithPass(userId, password) ? createToken(userId) : "";
-		} catch (SQLException throwables) {
-			throwables.printStackTrace();
+			return verificationUserWithPass(userId, password) ? createToken(userId, sessionId) : "";
+		} catch (SQLException throwable) {
+			throwable.printStackTrace();
 			return "";
 		}
 	}
@@ -86,14 +88,15 @@ public class UserResources {
 		return resultSet.getLong("id");
 	}
 
-	public static String createToken(long userId) throws SQLException {
+	public static String createToken(long userId, String sessionId) throws SQLException {
 		PreparedStatement pg = PostgresqlConnection.getConnection()
 				.prepareStatement("""
-						INSERT INTO users_sessions (user_id) values (?)
-						ON CONFLICT (user_id)
+						insert into users_sessions (user_id, session_id) values (?, ?)
+						on conflict (user_id)
 						do update set token = default
 						returning token""");
 		pg.setObject(1, userId);
+		pg.setObject(2, sessionId);
 		ResultSet resultSet = pg.executeQuery();
 		resultSet.next();
 		return resultSet.getString("token");
