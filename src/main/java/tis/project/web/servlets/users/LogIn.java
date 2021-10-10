@@ -7,15 +7,12 @@ import tis.project.web.components.users.UserResources;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.*;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
-@WebServlet(name = "loginServlet", urlPatterns = "/login")
+@WebServlet(name = "loginServlet", urlPatterns = "/api/login")
 public class LogIn extends HttpServlet {
 	private static final Logger logger = LoggerFactory.getLogger(Registration.class);
 
@@ -29,7 +26,12 @@ public class LogIn extends HttpServlet {
 			resp.sendError(400);
 			return;
 		}
-		String token = UserResources.login(email, password);
+
+		HttpSession session = req.getSession();
+		String id = session.getId();
+		logger.info("session id {}", id);
+
+		String token = UserResources.login(email, password, id);
 		if (token.length()<1) {
 			resp.sendError(403, """
 					{"err": {
