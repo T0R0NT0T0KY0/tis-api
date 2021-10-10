@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import tis.project.web.JSON_Parser;
 import tis.project.web.components.users.UserActiveTypeDTO;
 import tis.project.web.components.users.UserResources;
-import tis.project.web.components.users.registrDTO;
+import tis.project.web.components.users.registerDTO;
 import tis.project.web.HttpError;
 
 import javax.servlet.annotation.WebServlet;
@@ -31,12 +31,12 @@ public class Registration extends HttpServlet {
 			return;
 		}
 
-		registrDTO user = (registrDTO) validateData[1];
-
+		registerDTO user = (registerDTO) validateData[1];
 		HttpSession session = req.getSession();
-		String id = session.getId();
+		String sessionId = session.getId();
+		user.setSessionId(sessionId);
 
-		String[] registration = UserResources.registration(user, id);
+		String[] registration = UserResources.registration(user);
 		if (Objects.nonNull(registration[0])) {
 			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Неизвестная ошибка",
 					registration[0])));
@@ -49,7 +49,7 @@ public class Registration extends HttpServlet {
 		resp.addCookie(new Cookie("Authorization", registration[1]));
 		resp.addCookie(new Cookie("Login", user.getEmail()));
 		PrintWriter writer = resp.getWriter();
-		writer.println("{ \"user_id\": \"" + user.getId() + "\"}");
+		writer.println("{ \"user_id\": " + user.getId() + "}");
 		resp.setStatus(200);
 	}
 
@@ -62,7 +62,7 @@ public class Registration extends HttpServlet {
 			String username = body.get("username");
 			String nickname = body.get("nickname");
 			goList[0] = validateData(username, nickname, password, email);
-			goList[1] = new registrDTO(username, nickname, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
+			goList[1] = new registerDTO(username, nickname, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
 		} catch (ClassCastException | NullPointerException err) {
 			goList[0] = new HttpError(400,
 					new HttpError.ErrorObject("Проблема с введенными данными", err.getLocalizedMessage()));
