@@ -6,7 +6,6 @@ import tis.project.web.HttpError;
 import tis.project.web.JSON_Parser;
 import tis.project.web.components.users.LoginDTO;
 import tis.project.web.components.users.UserResources;
-import tis.project.web.components.users.registrDTO;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;

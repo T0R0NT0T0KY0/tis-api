@@ -8,14 +8,20 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 public class UserResources {
-	public static String[] registration(registrDTO newUser, String sessionId) {
+	public static String[] registration(registerDTO newUser) {
 		String[] goList = new String[2];
 		try {
-			newUser.setId(createUser(newUser));
-
-			addUserPass(newUser, newUser.getId());
-			addUserEmail(newUser, newUser.getId());
-			goList[1] = createToken(newUser.getId(), sessionId);
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("call insert_data_prc(?, ?, ?, ?, ?)");
+			pg.setObject(1, newUser.getUsername());
+			pg.setObject(2, newUser.getNickname());
+			pg.setObject(3, newUser.getPassword());
+			pg.setObject(4, newUser.getEmail());
+			pg.setObject(5, newUser.getSessionId());
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			newUser.setId(resultSet.getLong("user_id"));
+			goList[1] = resultSet.getString("session_token");
 		} catch (SQLException err) {
 			err.printStackTrace();
 			goList[0] = err.getLocalizedMessage();
@@ -37,7 +43,7 @@ public class UserResources {
 		try {
 			PreparedStatement pg = PostgresqlConnection.getConnection()
 					.prepareStatement("""
-							SELECT count(user_id)!=0 as exist from view_users
+							SELECT count(id)!=0 as exist from users
 							where ? =""" + type);
 			pg.setObject(1, value);
 			ResultSet resultSet = pg.executeQuery();
@@ -48,46 +54,6 @@ public class UserResources {
 		}
 	}
 
-
-	private static String addUserPass(registrDTO newUser, long userId) throws SQLException {
-		PreparedStatement pg = PostgresqlConnection.getConnection()
-				.prepareStatement("""
-						INSERT INTO d_users (user_id, password)
-						values (?, crypt(?, gen_salt('md5')))
-						returning password""");
-		pg.setObject(1, userId);
-		pg.setObject(2, newUser.getPassword());
-		ResultSet resultSet = pg.executeQuery();
-		resultSet.next();
-		return resultSet.getString("password");
-	}
-
-
-	private static String addUserEmail(registrDTO newUser, long userId) throws SQLException {
-		PreparedStatement pg = PostgresqlConnection.getConnection()
-				.prepareStatement("""
-						INSERT INTO users_info (user_id, email)
-						values (?, ?) returning email""");
-		pg.setObject(1, userId);
-		pg.setObject(2, newUser.getEmail());
-		ResultSet resultSet = pg.executeQuery();
-		resultSet.next();
-		return resultSet.getString("email");
-	}
-
-
-	public static long createUser(registrDTO newUser) throws SQLException {
-		PreparedStatement pg = PostgresqlConnection.getConnection()
-				.prepareStatement("""
-						INSERT INTO users (user_name, nickname, active_type)
-						values (?, ?, ?::active_type) returning id""");
-		pg.setObject(1, newUser.getUserName());
-		pg.setObject(2, newUser.getNickName());
-		pg.setObject(3, newUser.getUserActiveTypeDTO().toString());
-		ResultSet resultSet = pg.executeQuery();
-		resultSet.next();
-		return resultSet.getLong("id");
-	}
 
 	public static String createToken(long userId, String sessionId) throws SQLException {
 		PreparedStatement pg = PostgresqlConnection.getConnection()
@@ -141,7 +107,7 @@ public class UserResources {
 	public static long getUserIdByEmail(String email) throws SQLException {
 		PreparedStatement pg = PostgresqlConnection.getConnection()
 				.prepareStatement("""
-						SELECT user_id from users_info
+						SELECT id as user_id from users
 						where email = ?""");
 		pg.setObject(1, email);
 		ResultSet resultSet = pg.executeQuery();

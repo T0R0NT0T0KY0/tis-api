@@ -10,18 +10,19 @@ import java.util.Date;
 @Getter
 @Setter
 @ToString
-public class registrDTO {
+public class registerDTO {
 	private long id;
-	private String userName;
-	private String nickName;
+	private String username;
+	private String nickname;
 	private String email;
 	private UserActiveTypeDTO userActiveTypeDTO;
 	private Timestamp createdAt;
 	private String password;
+	private String sessionId;
 
-	public registrDTO(String userName, String nickName, String email, UserActiveTypeDTO userActiveTypeDTO, String password) {
-		this.userName = userName;
-		this.nickName = nickName;
+	public registerDTO(String username, String nickname, String email, UserActiveTypeDTO userActiveTypeDTO, String password) {
+		this.username = username;
+		this.nickname = nickname;
 		this.email = email;
 		this.userActiveTypeDTO = userActiveTypeDTO;
 		this.createdAt = new Timestamp(new Date().getTime());
