@@ -10,7 +10,7 @@ import java.util.Date;
 @Getter
 @Setter
 @ToString
-public class UsersDTO {
+public class registrDTO {
 	private long id;
 	private String userName;
 	private String nickName;
@@ -19,7 +19,7 @@ public class UsersDTO {
 	private Timestamp createdAt;
 	private String password;
 
-	public UsersDTO(String userName, String nickName, String email, UserActiveTypeDTO userActiveTypeDTO, String password) {
+	public registrDTO(String userName, String nickName, String email, UserActiveTypeDTO userActiveTypeDTO, String password) {
 		this.userName = userName;
 		this.nickName = nickName;
 		this.email = email;
