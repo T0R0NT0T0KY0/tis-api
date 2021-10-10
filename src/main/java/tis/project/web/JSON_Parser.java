@@ -3,8 +3,6 @@ package tis.project.web;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import tis.project.web.components.users.UserActiveTypeDTO;
-import tis.project.web.components.users.UsersDTO;
 
 import java.io.BufferedReader;
 import java.util.HashMap;

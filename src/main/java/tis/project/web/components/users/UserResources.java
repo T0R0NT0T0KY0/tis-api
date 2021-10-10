@@ -8,13 +8,14 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 public class UserResources {
-	public static String[] registration(UsersDTO newUser, String sessionId) {
+	public static String[] registration(registrDTO newUser, String sessionId) {
 		String[] goList = new String[2];
 		try {
-			long userId = createUser(newUser);
-			addUserPass(newUser, userId);
-			addUserEmail(newUser, userId);
-			goList[1] = createToken(userId, sessionId);
+			newUser.setId(createUser(newUser));
+
+			addUserPass(newUser, newUser.getId());
+			addUserEmail(newUser, newUser.getId());
+			goList[1] = createToken(newUser.getId(), sessionId);
 		} catch (SQLException err) {
 			err.printStackTrace();
 			goList[0] = err.getLocalizedMessage();
@@ -48,7 +49,7 @@ public class UserResources {
 	}
 
 
-	private static String addUserPass(UsersDTO newUser, long userId) throws SQLException {
+	private static String addUserPass(registrDTO newUser, long userId) throws SQLException {
 		PreparedStatement pg = PostgresqlConnection.getConnection()
 				.prepareStatement("""
 						INSERT INTO d_users (user_id, password)
@@ -62,7 +63,7 @@ public class UserResources {
 	}
 
 
-	private static String addUserEmail(UsersDTO newUser, long userId) throws SQLException {
+	private static String addUserEmail(registrDTO newUser, long userId) throws SQLException {
 		PreparedStatement pg = PostgresqlConnection.getConnection()
 				.prepareStatement("""
 						INSERT INTO users_info (user_id, email)
@@ -75,7 +76,7 @@ public class UserResources {
 	}
 
 
-	public static long createUser(UsersDTO newUser) throws SQLException {
+	public static long createUser(registrDTO newUser) throws SQLException {
 		PreparedStatement pg = PostgresqlConnection.getConnection()
 				.prepareStatement("""
 						INSERT INTO users (user_name, nickname, active_type)
@@ -125,7 +126,7 @@ public class UserResources {
 							SELECT count(id) = 1 as verification
 							from d_users
 							where user_id = ?
-							and password = crypt(?, gen_salt('md5'))""");
+							and password = crypt(?, password)""");
 			pg.setObject(1, userId);
 			pg.setObject(2, password);
 			ResultSet resultSet = pg.executeQuery();

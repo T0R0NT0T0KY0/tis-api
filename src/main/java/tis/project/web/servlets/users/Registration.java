@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import tis.project.web.JSON_Parser;
 import tis.project.web.components.users.UserActiveTypeDTO;
 import tis.project.web.components.users.UserResources;
-import tis.project.web.components.users.UsersDTO;
+import tis.project.web.components.users.registrDTO;
 import tis.project.web.HttpError;
 
 import javax.servlet.annotation.WebServlet;
@@ -31,7 +31,7 @@ public class Registration extends HttpServlet {
 			return;
 		}
 
-		UsersDTO user = (UsersDTO) validateData[1];
+		registrDTO user = (registrDTO) validateData[1];
 
 		HttpSession session = req.getSession();
 		String id = session.getId();
@@ -49,7 +49,7 @@ public class Registration extends HttpServlet {
 		resp.addCookie(new Cookie("Authorization", registration[1]));
 		resp.addCookie(new Cookie("Login", user.getEmail()));
 		PrintWriter writer = resp.getWriter();
-		writer.println("{ \"user_id\": " + user.getId() + "\"}");
+		writer.println("{ \"user_id\": \"" + user.getId() + "\"}");
 		resp.setStatus(200);
 	}
 
@@ -62,7 +62,7 @@ public class Registration extends HttpServlet {
 			String username = body.get("username");
 			String nickname = body.get("nickname");
 			goList[0] = validateData(username, nickname, password, email);
-			goList[1] = new UsersDTO(username, nickname, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
+			goList[1] = new registrDTO(username, nickname, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
 		} catch (ClassCastException | NullPointerException err) {
 			goList[0] = new HttpError(400,
 					new HttpError.ErrorObject("Проблема с введенными данными", err.getLocalizedMessage()));
@@ -114,7 +114,8 @@ public class Registration extends HttpServlet {
 	}
 
 	private HttpError validateDataIsEmpty(String userName, String nickName, String password, String email) {
-		return Objects.isNull(userName) || Objects.isNull(nickName) || Objects.isNull(email) || Objects.isNull(password) ?
+		return Objects.isNull(userName) || userName.length()==0 || Objects.isNull(nickName) || nickName.length()==0 ||
+				Objects.isNull(email) || email.length()==0 || Objects.isNull(password) || password.length()==0  ?
 				new HttpError(400, new HttpError.ErrorObject("Нет данных", "Пустые поля")) :
 				null;
 	}
