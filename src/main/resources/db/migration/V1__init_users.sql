@@ -2,14 +2,6 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 create extension if not exists "uuid-ossp";
 create type active_type as enum ('AUTHORIZED', 'NOT_CONFIRMED', 'DELETED', 'FROZEN');
 
-create table sa_users
-(
-    username text,
-    nickname text,
-    password text,
-    email    text
-);
-
 CREATE PROCEDURE insert_data_prc(username text, nickname text, password text, email text, session_id text
 , inout user_id integer default null, inout session_token text default null)
     LANGUAGE plpgsql
@@ -76,14 +68,3 @@ select du.user_id,
 from d_users du
          join users_sessions us on du.user_id = us.user_id
 where is_valid = true;
-
-create table users_info
-(
-    id         serial    not null primary key,
-    user_id    int       not null references users (id),
-    phone      text               default '',
-    city       text               default '',
-    country    text               default '',
-    about      text               default '',
-    updated_at timestamp not null default now()
-);
