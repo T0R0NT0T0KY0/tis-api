@@ -1,13 +1,13 @@
-package tis.project.web.components.users;
+package tis.project.web.components.registration;
 
 import lombok.Getter;
 
 @Getter
-public class LoginDTO {
+public class LoginType {
 	private final String email;
 	private final String password;
 
-	public LoginDTO(String email, String password) {
+	public LoginType(String email, String password) {
 		this.email = email;
 		this.password = password;
 	}

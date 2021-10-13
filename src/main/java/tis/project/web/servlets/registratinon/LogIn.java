@@ -1,11 +1,10 @@
-package tis.project.web.servlets.users;
+package tis.project.web.servlets.registratinon;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tis.project.web.HttpError;
 import tis.project.web.JSON_Parser;
-import tis.project.web.components.users.LoginDTO;
-import tis.project.web.components.users.UserResources;
+import tis.project.web.components.registration.LoginType;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -13,6 +12,8 @@ import javax.servlet.http.*;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
+
+import static tis.project.web.components.users.UserResources.login;
 
 @WebServlet(name = "loginServlet", urlPatterns = "/api/login")
 public class LogIn extends HttpServlet {
@@ -32,17 +33,17 @@ public class LogIn extends HttpServlet {
 		}
 
 		HttpSession session = req.getSession();
-		String session_id = session.getId();
+		String sessionId = session.getId();
 
-		LoginDTO loginDTO = (LoginDTO) validateData[1];
-		String token = UserResources.login(loginDTO.getEmail(), loginDTO.getPassword(), session_id);
-		if (token.length() < 1) {
+		LoginType loginType = (LoginType) validateData[1];
+		Object[] list = login(loginType.getEmail(), loginType.getPassword(), sessionId);
+		if (Objects.nonNull(list[0])) {
 			resp.sendError(403, JSON_Parser.stringify(new HttpError.ErrorObject("Отказано в доступе",
 					"Не павильная комбинация пароль/логин")));
 			return;
 		}
-		resp.addCookie(new Cookie("Authorization", token));
-		resp.addCookie(new Cookie("Login", loginDTO.getEmail()));
+		session.setMaxInactiveInterval(-1);
+		session.setAttribute("user_dto", list[1]);
 		resp.setStatus(200);
 	}
 
@@ -51,7 +52,7 @@ public class LogIn extends HttpServlet {
 		try {
 			String email = body.get("email");
 			String password = body.get("password");
-			goList[1] = new LoginDTO(email, password);
+			goList[1] = new LoginType(email, password);
 		} catch (ClassCastException | NullPointerException err) {
 			goList[0] = new HttpError(400,
 					new HttpError.ErrorObject("Проблема с введенными данными", err.getLocalizedMessage()));

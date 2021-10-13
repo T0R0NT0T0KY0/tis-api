@@ -14,17 +14,17 @@ public class JSON_Parser {
 			new ObjectMapper().writer().withDefaultPrettyPrinter();
 
 
-	public static Map<String, String> parse(String json) {
+	public static Map parse(String json) {
 		try {
 			return new ObjectMapper().readValue(json,
 					Map.class);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
+			return new HashMap<>();
 		}
-		return new HashMap<>();
 	}
 
-	public static Map<String, String> parse(BufferedReader buffJSON) {
+	public static Map parse(BufferedReader buffJSON) {
 		return parse(buffJSON.lines()
 				.reduce("", (accumulator, actual) -> accumulator + actual));
 	}

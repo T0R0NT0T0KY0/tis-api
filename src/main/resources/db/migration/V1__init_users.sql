@@ -58,11 +58,12 @@ create table users_sessions
     updated_at timestamp not null default now()
 );
 
-create view view_d_users_sessions (user_id, password, token, is_valid_session, updated_at)
+create view view_d_users_sessions (user_id, password, token, session_id, is_valid_session, updated_at)
 as
 select du.user_id,
        du.password,
        us.token,
+       us.session_id,
        us.is_valid as is_valid_session,
        du.updated_at
 from d_users du

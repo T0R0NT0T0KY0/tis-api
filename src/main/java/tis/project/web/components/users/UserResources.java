@@ -1,5 +1,8 @@
 package tis.project.web.components.users;
 
+import tis.project.web.components.registration.RegisterType;
+import tis.project.web.components.users.dto.UserDTO;
+import tis.project.web.components.users.dto.UserPageDTO;
 import tis.project.web.services.db.PostgresqlConnection;
 
 import java.sql.PreparedStatement;
@@ -8,8 +11,8 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 public class UserResources {
-	public static String[] registration(registerDTO newUser) {
-		String[] goList = new String[2];
+	public static Object[] registration(RegisterType newUser) {
+		Object[] goList = new Object[2];
 		try {
 			PreparedStatement pg = PostgresqlConnection.getConnection()
 					.prepareStatement("call insert_data_prc(?, ?, ?, ?, ?)");
@@ -21,21 +24,38 @@ public class UserResources {
 			ResultSet resultSet = pg.executeQuery();
 			resultSet.next();
 			newUser.setId(resultSet.getLong("user_id"));
-			goList[1] = resultSet.getString("session_token");
-		} catch (SQLException err) {
-			err.printStackTrace();
-			goList[0] = err.getLocalizedMessage();
+			String token = resultSet.getString("session_token");
+			goList[1] = new UserDTO(newUser.getId(), newUser.getEmail(), newUser.getSessionId(), token);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			goList[0] = e.getLocalizedMessage();
 		}
 		return goList;
 	}
 
-	public static String login(String email, String password, String sessionId) {
+	public static Object[] login(String email, String password, String sessionId) {
+		Object[] goList = new Object[2];
 		try {
-			long userId = getUserIdByEmail(email);
-			return verificationUserWithPass(userId, password) ? createToken(userId, sessionId) : "";
-		} catch (SQLException throwable) {
-			throwable.printStackTrace();
-			return "";
+			Object[] userId = getUserIdByEmail(email);
+			if (Objects.nonNull(userId[0])) throw (Exception) userId[0];
+			Long id = (Long) userId[1];
+			String token = verificationUserWithPass(id, password) ? createToken(id, sessionId) : "";
+			goList[1] = new UserDTO(id, email, sessionId, token);
+		} catch (Exception e) {
+			e.printStackTrace();
+			goList[0] = e.getLocalizedMessage();
+		}
+		return goList;
+	}
+
+	public static Boolean isAvailableSession(String sessionId, Object user) {
+		try {
+			UserDTO userDTO = (UserDTO) user;
+			return sessionId.equals(userDTO.getSessionId()) && tokenVerification(userDTO.getToken(),
+					userDTO.getSessionId(), userDTO.getId());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
 		}
 	}
 
@@ -70,15 +90,17 @@ public class UserResources {
 	}
 
 
-	public static boolean tokenVerification(String token, long userId) throws SQLException {
+	public static boolean tokenVerification(String token, String sessionId, long userId) throws SQLException {
 		PreparedStatement pg = PostgresqlConnection.getConnection()
 				.prepareStatement("""
-						SELECT concat(user_id) = 1 as verification
+						SELECT count(user_id) = 1 as verification
 						from view_d_users_sessions
 						where token = ?
+						and session_id = ?
 						and user_id = ?""");
 		pg.setObject(1, token);
-		pg.setObject(2, userId);
+		pg.setObject(2, sessionId);
+		pg.setObject(3, userId);
 		ResultSet resultSet = pg.executeQuery();
 		resultSet.next();
 		return Objects.nonNull(resultSet.getString("verification"));
@@ -104,14 +126,60 @@ public class UserResources {
 
 	}
 
-	public static long getUserIdByEmail(String email) throws SQLException {
-		PreparedStatement pg = PostgresqlConnection.getConnection()
-				.prepareStatement("""
-						SELECT id as user_id from users
-						where email = ?""");
-		pg.setObject(1, email);
-		ResultSet resultSet = pg.executeQuery();
-		resultSet.next();
-		return Long.parseLong(resultSet.getString("user_id"));
+	public static Object[] getUserIdByEmail(String email) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							SELECT id as user_id from users
+							where email = ?""");
+			pg.setObject(1, email);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = Long.parseLong(resultSet.getString("user_id"));
+		} catch (SQLException e) {
+			e.printStackTrace();
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static String getUserAvatar(long userId) {
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							SELECT image_link from users_avatars
+							where user_id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			return resultSet.getString("image_link");
+		} catch (SQLException e) {
+			return "";
+		}
+	}
+
+	public static Object[] getUserInformationById(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							SELECT user_id, place, birthday, email, predictions_experience, team_name, team_image_link
+								from users_information
+							where user_id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = new UserPageDTO(resultSet.getLong("user_id"),
+					resultSet.getString("place"),
+					resultSet.getString("birthday"),
+					resultSet.getString("email"),
+					resultSet.getLong("predictions_experience"),
+					resultSet.getString("team_name"),
+					resultSet.getString("team_image_link"));
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
 	}
 }
