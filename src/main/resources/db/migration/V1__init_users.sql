@@ -25,7 +25,7 @@ BEGIN
     SELECT id into user_id_d FROM users where users.nickname = $2;
 
     INSERT INTO d_users (user_id, password)
-    VALUES (user_id_d, $3);
+    VALUES (user_id_d, crypt($3, gen_salt('md5')));
 
     INSERT INTO users_sessions (user_id, session_id)
     VALUES (user_id_d, $5);

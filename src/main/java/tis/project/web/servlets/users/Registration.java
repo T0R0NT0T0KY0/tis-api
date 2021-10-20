@@ -114,8 +114,8 @@ public class Registration extends HttpServlet {
 	}
 
 	private HttpError validateDataIsEmpty(String userName, String nickName, String password, String email) {
-		return Objects.isNull(userName) || userName.length()==0 || Objects.isNull(nickName) || nickName.length()==0 ||
-				Objects.isNull(email) || email.length()==0 || Objects.isNull(password) || password.length()==0  ?
+		return Objects.isNull(userName) || userName.length() == 0 || Objects.isNull(nickName) || nickName.length() == 0 ||
+				Objects.isNull(email) || email.length() == 0 || Objects.isNull(password) || password.length() == 0 ?
 				new HttpError(400, new HttpError.ErrorObject("Нет данных", "Пустые поля")) :
 				null;
 	}
