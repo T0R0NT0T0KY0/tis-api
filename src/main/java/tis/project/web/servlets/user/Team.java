@@ -13,7 +13,7 @@ import java.io.PrintWriter;
 import java.util.Objects;
 
 import static tis.project.web.components.users.UserResources.getTeam;
-import static tis.project.web.helpers.Validator.validateData;
+import static tis.project.web.helpers.Validator.validateInputData;
 
 @WebServlet(name = "userTeam", urlPatterns = "/api/user/team")
 public class Team extends HttpServlet {
@@ -21,7 +21,7 @@ public class Team extends HttpServlet {
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		String user_id = req.getParameter("user_id");
 		System.out.println("user_id: " + user_id + ", URL=" + req.getRequestURL());
-		Object[] validateData = validateData(user_id);
+		Object[] validateData = validateInputData(user_id);
 		if (Objects.nonNull(validateData[0])) {
 			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Неправильный запрос", "Обязательный" +
 					"пареметр - id пользователя не может быть пустым")));
