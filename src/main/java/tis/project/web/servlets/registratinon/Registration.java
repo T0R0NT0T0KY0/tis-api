@@ -1,11 +1,8 @@
-package tis.project.web.servlets.users;
+package tis.project.web.servlets.registratinon;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tis.project.web.JSON_Parser;
-import tis.project.web.components.users.UserActiveTypeDTO;
-import tis.project.web.components.users.UserResources;
-import tis.project.web.components.users.registerDTO;
+import tis.project.web.components.users.dto.UserActiveTypeDTO;
+import tis.project.web.components.registration.RegisterType;
 import tis.project.web.HttpError;
 
 import javax.servlet.annotation.WebServlet;
@@ -15,41 +12,44 @@ import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Objects;
 
+import static tis.project.web.components.users.UserResources.isNotUnique;
+import static tis.project.web.components.users.UserResources.registration;
+
 @WebServlet(name = "registrationServlet", urlPatterns = "/api/registration")
 public class Registration extends HttpServlet {
-	private static final Logger logger = LoggerFactory.getLogger(Registration.class);
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		Map<String, String> body = JSON_Parser.parse(req.getReader());
-		Object[] validateData = validateData(body);
+		body.forEach((s, s2) -> System.out.println(s + ": " + s2));
 
+		Object[] validateData = validateData(body);
 		HttpError error = (HttpError) validateData[0];
+		PrintWriter pw = resp.getWriter();
 		if (Objects.nonNull(error)) {
-			resp.setContentType("json/http");
-			resp.sendError(error.getErrorCode(), JSON_Parser.stringify(error.getErrorObject()));
+			pw.write(JSON_Parser.stringify(error.getErrorObject()));
+			resp.setStatus(error.getStatus());
 			return;
 		}
-
-		registerDTO user = (registerDTO) validateData[1];
+		RegisterType user = (RegisterType) validateData[1];
 		HttpSession session = req.getSession();
 		String sessionId = session.getId();
 		user.setSessionId(sessionId);
 
-		String[] registration = UserResources.registration(user);
-		if (Objects.nonNull(registration[0])) {
-			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Неизвестная ошибка",
-					registration[0])));
+		Object[] list = registration(user);
+		if (Objects.nonNull(list[0])) {
+			pw.write(JSON_Parser.stringify(new HttpError.ErrorObject("Invalid input",
+					((Exception) list[0]).getMessage())));
+			resp.setStatus(400);
 			return;
 		}
 
 		session.setMaxInactiveInterval(-1);
-		session.setAttribute("Authorization_session", registration[1]);
-		session.setAttribute("userDTO", user);
-		resp.addCookie(new Cookie("Authorization", registration[1]));
-		resp.addCookie(new Cookie("Login", user.getEmail()));
-		PrintWriter writer = resp.getWriter();
-		writer.println("{ \"user_id\": " + user.getId() + "}");
+		session.setAttribute("user_dto", list[1]);
+		resp.setHeader("user_id", String.valueOf(user.getId()));
+		System.out.println("{ \"user_id\": " + user.getId() + "}");
+		pw.write("{ \"user_id\": " + user.getId() + " }");
+
 		resp.setStatus(200);
 	}
 
@@ -62,17 +62,16 @@ public class Registration extends HttpServlet {
 			String username = body.get("username");
 			String nickname = body.get("nickname");
 			goList[0] = validateData(username, nickname, password, email);
-			goList[1] = new registerDTO(username, nickname, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
+			goList[1] = new RegisterType(username, nickname, email, UserActiveTypeDTO.NOT_CONFIRMED, password);
 		} catch (ClassCastException | NullPointerException err) {
 			goList[0] = new HttpError(400,
-					new HttpError.ErrorObject("Проблема с введенными данными", err.getLocalizedMessage()));
+					new HttpError.ErrorObject("Проблема с введенными данными", err.getMessage()));
 			goList[1] = null;
 		}
 		return goList;
 	}
 
 	// mb with throw will be better see
-	// or on js like this
 	// return e1 ?? e2 ?? e3 ?? e4 ?? e5;
 	private HttpError validateData(String userName, String nickName, String password, String email) {
 		HttpError e1 = validateDataIsEmpty(userName, nickName, password, email);
@@ -94,35 +93,35 @@ public class Registration extends HttpServlet {
 	}
 
 	private HttpError validateUniqueEmail(String email) {
-		return UserResources.isNotUnique(email, "email") ?
-				new HttpError(400, new HttpError.ErrorObject("Не уникальное поле email",
-						"email уже занят. Введите другой, или восстановите пароль")) : null;
+		return isNotUnique(email, "email") ?
+				new HttpError(400, new HttpError.ErrorObject("Email is not unique",
+						"The email is already busy. Enter a different one, or restore the password")) : null;
 	}
 
 	private HttpError validateUniqueNickname(String nickname) {
-		return UserResources.isNotUnique(nickname, "nickname") ?
-				new HttpError(400, new HttpError.ErrorObject("Не уникальное поле nickname",
-						"Кто то уже занял такой же nickname")) : null;
+		return isNotUnique(nickname, "nickname") ?
+				new HttpError(400, new HttpError.ErrorObject("Nickname is not unique",
+						"Someone has already taken the same nickname")) : null;
 	}
 
 	private HttpError validatePassword(String password) {
 		return password.length() < 6 || !password.matches(".*\\d.*\\d.*\\d.*") ||
 				!password.matches(".*[a-z].*") || !password.matches(".*[A-Z].*") ?
-				new HttpError(400, new HttpError.ErrorObject("Легкий пароль",
-						"Пароль должен быть не коротким (длиной минимум в 5 символов).\n" +
-								"Состоять из минимум 4 цифр, 1 заглавной и 1 строчной латинских букв")) : null;
+				new HttpError(400, new HttpError.ErrorObject("Too easy password",
+						"The password must not be short (at least 5 characters long).\n" +
+								"Consists of at least 4 digits, 1 uppercase and 1 lowercase Latin letters")) : null;
 	}
 
 	private HttpError validateDataIsEmpty(String userName, String nickName, String password, String email) {
 		return Objects.isNull(userName) || userName.length() == 0 || Objects.isNull(nickName) || nickName.length() == 0 ||
 				Objects.isNull(email) || email.length() == 0 || Objects.isNull(password) || password.length() == 0 ?
-				new HttpError(400, new HttpError.ErrorObject("Нет данных", "Пустые поля")) :
+				new HttpError(400, new HttpError.ErrorObject("No data", "Empty Fields")) :
 				null;
 	}
 
 	private HttpError validateEmail(String email) {
 		return !email.matches(".+@.+\\..+") ?
-				new HttpError(400, new HttpError.ErrorObject("Некорректный e-mail",
-						"введена некорректная электронная почта")) : null;
+				new HttpError(400, new HttpError.ErrorObject("email",
+						"example zxc@qwe.ss")) : null;
 	}
 }
