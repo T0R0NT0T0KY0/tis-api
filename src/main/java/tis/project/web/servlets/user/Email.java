@@ -13,7 +13,7 @@ import java.io.PrintWriter;
 import java.util.Objects;
 
 import static tis.project.web.components.users.UserResources.getEmail;
-import static tis.project.web.helpers.Validator.validateData;
+import static tis.project.web.helpers.Validator.validateInputData;
 
 @WebServlet(name = "userEmail", urlPatterns = "/api/user/email")
 public class Email extends HttpServlet {
@@ -22,7 +22,7 @@ public class Email extends HttpServlet {
 		String user_id = req.getParameter("user_id");
 		System.out.println("user_id: " + user_id + ", URL=" + req.getRequestURL());
 
-		Object[] validateData = validateData(user_id);
+		Object[] validateData = validateInputData(user_id);
 		if (Objects.nonNull(validateData[0])) {
 			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Неправильный запрос", "Обязательный" +
 					"пареметр - id пользователя не может быть пустым")));

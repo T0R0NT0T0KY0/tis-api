@@ -24,7 +24,7 @@ public class UserPhoto extends HttpServlet {
 		String user_id = req.getParameter("user_id");
 		System.out.println("user_id: " + user_id + ", URL=" + req.getRequestURL());
 
-		Object[] validateData = validateData(user_id);
+		Object[] validateData = validateInputData(user_id);
 		if (Objects.nonNull(validateData[0])) {
 			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Bed request",
 					"param - user_id can't be empty")));
@@ -45,7 +45,7 @@ public class UserPhoto extends HttpServlet {
 		String user_id = req.getParameter("user_id");
 		Map<String, String> body = JSON_Parser.parse(req.getReader());
 		System.out.println("user_id: " + user_id);
-		Object[] validateData = validateData(user_id);
+		Object[] validateData = validateInputData(user_id);
 		if (Objects.nonNull(validateData[0])) {
 			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Bed request",
 					"param - user_id can't be empty")));
@@ -73,7 +73,7 @@ public class UserPhoto extends HttpServlet {
 		String user_id = req.getParameter("user_id");
 		Map<String, String> body = JSON_Parser.parse(req.getReader());
 		System.out.println("user_id: " + user_id);
-		Object[] validateData = validateData(user_id);
+		Object[] validateData = validateInputData(user_id);
 		if (Objects.nonNull(validateData[0])) {
 			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Bed request",
 					"param - user_id can't be empty")));
@@ -99,7 +99,7 @@ public class UserPhoto extends HttpServlet {
 	protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		String user_id = req.getParameter("user_id");
 		System.out.println("user_id: " + user_id);
-		Object[] validateData = validateData(user_id);
+		Object[] validateData = validateInputData(user_id);
 		if (Objects.nonNull(validateData[0])) {
 			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Bed request",
 							"param - user_id can't be empty")));
