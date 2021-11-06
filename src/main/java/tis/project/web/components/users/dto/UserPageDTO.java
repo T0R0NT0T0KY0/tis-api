@@ -7,21 +7,25 @@ import lombok.Setter;
 @Setter
 public class UserPageDTO {
 	private  long user_id;
-	private String place;
+	private String nickname;
+	private String username;
+	private String team;
+	private String team_image_link;
+	private String living_place;
 	private String birthday;
 	private String email;
-	private long predictions_experience;
-	private String team_name;
-	private String team_image_link;
+	private String about;
 
-	public UserPageDTO(long user_id, String place, String birthday, String email, long predictions_experience,
-	                   String team_name, String team_image_link) {
+	public UserPageDTO(long user_id, String nickname, String username, String team, String team_image_link,
+	                   String living_place, String birthday, String email, String about) {
 		this.user_id = user_id;
-		this.place = place;
+		this.nickname = nickname;
+		this.username = username;
+		this.team = team;
+		this.team_image_link = team_image_link;
+		this.living_place = living_place;
 		this.birthday = birthday;
 		this.email = email;
-		this.predictions_experience = predictions_experience;
-		this.team_name = team_name;
-		this.team_image_link = team_image_link;
+		this.about = about;
 	}
 }

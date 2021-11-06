@@ -25,10 +25,11 @@ public class UserResources {
 			resultSet.next();
 			newUser.setId(resultSet.getLong("user_id"));
 			String token = resultSet.getString("session_token");
+			System.out.println(token);
 			goList[1] = new UserDTO(newUser.getId(), newUser.getEmail(), newUser.getSessionId(), token);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			goList[0] = e.getLocalizedMessage();
+			goList[0] = e.getMessage();
 		}
 		return goList;
 	}
@@ -36,14 +37,14 @@ public class UserResources {
 	public static Object[] login(String email, String password, String sessionId) {
 		Object[] goList = new Object[2];
 		try {
-			Object[] userId = getUserIdByEmail(email);
-			if (Objects.nonNull(userId[0])) throw (Exception) userId[0];
-			Long id = (Long) userId[1];
-			String token = verificationUserWithPass(id, password) ? createToken(id, sessionId) : "";
-			goList[1] = new UserDTO(id, email, sessionId, token);
+			long user_id = verificationUserWithPass(email, password);
+			System.out.println("user_id: " + user_id);
+			long userId = getUserIdByEmail(email);
+			String token = createToken(userId, sessionId);
+			goList[1] = new UserDTO(userId, email, sessionId, token);
 		} catch (Exception e) {
 			e.printStackTrace();
-			goList[0] = e.getLocalizedMessage();
+			goList[0] = e.getMessage();
 		}
 		return goList;
 	}
@@ -107,41 +108,29 @@ public class UserResources {
 	}
 
 
-	private static boolean verificationUserWithPass(long userId, String password) {
-		try {
-			PreparedStatement pg = PostgresqlConnection.getConnection()
-					.prepareStatement("""
-							SELECT count(id) = 1 as verification
-							from d_users
-							where user_id = ?
-							and password = crypt(?, password)""");
-			pg.setObject(1, userId);
-			pg.setObject(2, password);
-			ResultSet resultSet = pg.executeQuery();
-			resultSet.next();
-			return resultSet.getBoolean("verification");
-		} catch (SQLException e) {
-			return false;
-		}
-
+	private static long verificationUserWithPass(String email, String password) throws SQLException {
+		PreparedStatement pg = PostgresqlConnection.getConnection()
+				.prepareStatement("""
+						SELECT user_id
+						from d_users
+						where user_id = (select id from users where email = ?)
+						and password = crypt(?, password)""");
+		pg.setObject(1, email);
+		pg.setObject(2, password);
+		ResultSet resultSet = pg.executeQuery();
+		resultSet.next();
+		return resultSet.getLong("user_id");
 	}
 
-	public static Object[] getUserIdByEmail(String email) {
-		Object[] goList = new Object[2];
-		try {
-			PreparedStatement pg = PostgresqlConnection.getConnection()
-					.prepareStatement("""
-							SELECT id as user_id from users
-							where email = ?""");
-			pg.setObject(1, email);
-			ResultSet resultSet = pg.executeQuery();
-			resultSet.next();
-			goList[1] = Long.parseLong(resultSet.getString("user_id"));
-		} catch (SQLException e) {
-			e.printStackTrace();
-			goList[0] = e;
-		}
-		return goList;
+	public static long getUserIdByEmail(String email) throws SQLException {
+		PreparedStatement pg = PostgresqlConnection.getConnection()
+				.prepareStatement("""
+						SELECT id as user_id from users
+						where email = ?""");
+		pg.setObject(1, email);
+		ResultSet resultSet = pg.executeQuery();
+		resultSet.next();
+		return resultSet.getLong("user_id");
 	}
 
 	public static String getUserAvatar(long userId) {
@@ -159,24 +148,207 @@ public class UserResources {
 		}
 	}
 
-	public static Object[] getUserInformationById(long userId) {
+	public static Object[] getUserPhoto(long userId) {
 		Object[] goList = new Object[2];
 		try {
 			PreparedStatement pg = PostgresqlConnection.getConnection()
 					.prepareStatement("""
-							SELECT user_id, place, birthday, email, predictions_experience, team_name, team_image_link
-								from users_information
+							select image_link from users_avatars
 							where user_id = ?""");
 			pg.setObject(1, userId);
 			ResultSet resultSet = pg.executeQuery();
 			resultSet.next();
-			goList[1] = new UserPageDTO(resultSet.getLong("user_id"),
-					resultSet.getString("place"),
-					resultSet.getString("birthday"),
-					resultSet.getString("email"),
-					resultSet.getLong("predictions_experience"),
-					resultSet.getString("team_name"),
-					resultSet.getString("team_image_link"));
+			goList[1] = resultSet.getString("image_link");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] addUserPhoto(long userId, String imageLink) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							insert into users_avatars (user_id, image_link) 
+							values (?, ?) returning image_link""");
+			pg.setObject(1, userId);
+			pg.setObject(2, imageLink);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getString("image_link");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] updateUserPhoto(long userId, String imageLink) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							update users_avatars set (image_link, updated_at)
+							= (?, now()) where user_id = ? returning image_link""");
+			pg.setObject(1, imageLink);
+			pg.setObject(2, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getString("image_link");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] deleteUserPhoto(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							delete from users_avatars where user_id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+
+	public static Object[] getUsername(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							select username from users
+							where id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getString("username");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] getNickname(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							select nickname from users
+							where id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getString("nickname");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] getLivingPlace(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							select living_place from users_info
+							where user_id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getString("place");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] getBirthday(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							select date from users_birthdays
+							where user_id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getString("day_month");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] getAbout(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							select about from users_info
+							where user_id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getString("about");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] getUserinfo(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							select user_id, nickname, username, living_place, birthday, email, team, team_image_link, about
+							 from view_users_information
+							where user_id = ?""");
+			pg.setObject(1, userId);
+			ResultSet rs = pg.executeQuery();
+			rs.next();
+			goList[1] = new UserPageDTO(rs.getLong("user_id"), rs.getString("nickname")
+					, rs.getString("username"), rs.getString("team"), rs.getString("team_image_link"), rs.getString(
+					"living_place"), rs.getString("birthday"), rs.getString("email"), rs.getString("about"));
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] getEmail(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							select email from users
+							where id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getString("email");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+	public static Object[] getTeam(long userId) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							select team from users_teams_fans
+							where user_id = ?""");
+			pg.setObject(1, userId);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getString("team");
 		} catch (SQLException e) {
 			goList[0] = e;
 		}

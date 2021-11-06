@@ -7,10 +7,10 @@ import lombok.ToString;
 @ToString
 public class HttpError {
 	private final Object errorObject;
-	private final int errorCode;
+	private final int status;
 
-	public HttpError(int errorCode, ErrorObject errorObject) {
-		this.errorCode = errorCode;
+	public HttpError(int status, ErrorObject errorObject) {
+		this.status = status;
 		this.errorObject = errorObject;
 	}
 

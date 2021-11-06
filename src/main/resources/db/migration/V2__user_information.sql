@@ -1,3 +1,13 @@
+create table users_info
+(
+    id           serial    not null primary key,
+    user_id      int       not null references users (id),
+    phone        text,
+    living_place text,
+    about        text,
+    updated_at   timestamp not null default now()
+);
+
 create table users_avatars
 (
     id         serial    not null primary key,
@@ -21,13 +31,6 @@ create table users_teams_fans
     team    text references teams (name)
 );
 
-create table users_living_places
-(
-    id      serial not null primary key,
-    user_id integer references users (id),
-    place   text   not null
-);
-
 -- add +-
 create table users_experience_predictions
 (
@@ -39,23 +42,25 @@ create table users_experience_predictions
 
 create table users_birthdays
 (
-    id        serial not null primary key,
-    user_id   integer references users (id),
-    day_month text   not null,
-    year      integer
+    id      serial not null primary key,
+    user_id integer references users (id),
+    date    timestamp
 );
 
-create view users_information (user_id, place, birthday, email, predictions_experience, team_name, team_image_link)
+create view view_users_information
+            (user_id, username, nickname, living_place, birthday, email, team, team_image_link, about)
 as
-select u.id                         as user_id,
-       place,
-       concat(day_month, ' ', year) as birthday,
+select u.id                                                                    as user_id,
+       username,
+       nickname,
+       ui.living_place                                                         as living_place,
+       ub.date                                                                 as birthday,
        email,
-       experience,
-       utf.team as team_name,
-       (select image_link as team_image_link from teams where name = utf.team) as team_image_link
+       utf.team                                                                as team,
+       (select image_link as team_image_link from teams where name = utf.team) as team_image_link,
+       ui.about                                                                as about
 from users u
-         left join users_living_places ulp on u.id = ulp.user_id
+         left join users_info ui on u.id = ui.user_id
          left join users_birthdays ub on u.id = ub.user_id
          left join users_experience_predictions exp on u.id = exp.user_id
-         left join users_teams_fans utf on u.id = utf.user_id
+         left join users_teams_fans utf on u.id = utf.user_id;

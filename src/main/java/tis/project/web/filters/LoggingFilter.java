@@ -9,7 +9,7 @@ import java.io.IOException;
 
 import static tis.project.web.components.users.UserResources.isAvailableSession;
 
-@WebFilter("/api/reg/")
+@WebFilter("/api/")
 public class LoggingFilter implements Filter {
 	private ServletContext context;
 
