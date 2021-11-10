@@ -52,8 +52,8 @@ public class UserResources {
 	public static Boolean isAvailableSession(String sessionId, Object user) {
 		try {
 			UserDTO userDTO = (UserDTO) user;
-			return sessionId.equals(userDTO.getSessionId()) && tokenVerification(userDTO.getToken(),
-					userDTO.getSessionId(), userDTO.getId());
+			return sessionId.equals(userDTO.getSession()) && tokenVerification(userDTO.getToken(),
+					userDTO.getSession(), userDTO.getId());
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
@@ -227,6 +227,51 @@ public class UserResources {
 			ResultSet resultSet = pg.executeQuery();
 			resultSet.next();
 			goList[1] = resultSet.getString("username");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+
+	public static Object[] updateUsername(long userId, String token, String username) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							update users set username = ?
+							where id = (select user_id
+								from users_sessions
+								where user_id = ?
+								and token = ?
+								and is_valid = true)
+							returning id""");
+			pg.setObject(1, username);
+			pg.setObject(2, userId);
+			pg.setObject(3, token);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getInt("id");
+		} catch (SQLException e) {
+			goList[0] = e;
+		}
+		return goList;
+	}
+
+
+	public static Object[] getValidUserIdByToken(String token) {
+		Object[] goList = new Object[2];
+		try {
+			PreparedStatement pg = PostgresqlConnection.getConnection()
+					.prepareStatement("""
+							select user_id
+							from users_sessions
+							where token = ?
+								and is_valid = true""");
+			pg.setObject(1, token);
+			ResultSet resultSet = pg.executeQuery();
+			resultSet.next();
+			goList[1] = resultSet.getInt("user_id");
 		} catch (SQLException e) {
 			goList[0] = e;
 		}

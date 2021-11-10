@@ -23,6 +23,8 @@ BEGIN
     VALUES (user_id_d, $5);
     SELECT token into session_token_d FROM users_sessions where users_sessions.user_id = user_id_d;
 
+    INSERT INTO users_avatars (user_id) values (user_id_d);
+
     user_id := user_id_d;
     session_token := session_token_d;
     RETURN;

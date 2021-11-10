@@ -1,7 +1,7 @@
 package tis.project.web.servlets.user;
 
-import tis.project.web.HttpError;
-import tis.project.web.JSON_Parser;
+import tis.project.web.helpers.HttpError;
+import tis.project.web.helpers.JSON_Parser;
 import tis.project.web.components.users.dto.UserPageDTO;
 
 import javax.servlet.ServletException;
@@ -24,9 +24,11 @@ public class allData extends HttpServlet {
 		System.out.println("user_id: " + user_id + ", URL=" + req.getRequestURL());
 
 		Object[] validateData = validateInputData(user_id);
+		PrintWriter pw = resp.getWriter();
 		if (Objects.nonNull(validateData[0])) {
-			resp.sendError(400, JSON_Parser.stringify(new HttpError.ErrorObject("Неправильный запрос", "Обязательный" +
-					"пареметр - id пользователя не может быть пустым")));
+			pw.write(JSON_Parser.stringify(new HttpError.ErrorObject("Bed request",
+					"Param - user_id can't be empty")));
+			resp.setStatus(400);
 			return;
 		}
 		Long userId = (Long) validateData[1];
@@ -37,7 +39,6 @@ public class allData extends HttpServlet {
 		}
 
 		UserPageDTO upd = (UserPageDTO) list[1];
-		PrintWriter pw = resp.getWriter();
 
 		System.out.println(upd);
 		pw.write("{ \"data\": " + JSON_Parser.stringify(upd) + "}");

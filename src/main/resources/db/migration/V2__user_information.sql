@@ -12,9 +12,10 @@ create table users_avatars
 (
     id         serial    not null primary key,
     user_id    int       not null references users (id),
-    image_link text      not null,
+    image_link text      not null default 'https://avatars.yandex.net/get-music-content/5280749/413fff7e.a.18433448-1/m1000x1000',
     updated_at timestamp not null default now()
 );
+
 
 create table teams
 (

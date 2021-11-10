@@ -1,8 +1,8 @@
 package tis.project.web.servlets.registratinon;
 
-import tis.project.web.JSON_Parser;
+import tis.project.web.helpers.JSON_Parser;
 import tis.project.web.components.registration.RegisterType;
-import tis.project.web.HttpError;
+import tis.project.web.helpers.HttpError;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static tis.project.web.components.users.UserResources.registration;
+import static tis.project.web.helpers.Sessions.removeHTTPOnly;
 import static tis.project.web.servlets.registratinon.RegistrationServices.validateRegistrationData;
 
 @WebServlet(name = "registrationServlet", urlPatterns = "/api/registration")
@@ -42,13 +43,12 @@ public class Registration extends HttpServlet {
 			resp.setStatus(400);
 			return;
 		}
-
 		session.setMaxInactiveInterval(-1);
 		session.setAttribute("user_dto", list[1]);
 		System.out.println("{ \"user_id\": " + user.getId() + "}");
 		pw.write("{ \"user_id\": " + user.getId() + " }");
-
 		resp.setStatus(200);
+		removeHTTPOnly(resp);
 	}
 
 

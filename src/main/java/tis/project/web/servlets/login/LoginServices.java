@@ -1,6 +1,6 @@
 package tis.project.web.servlets.login;
 
-import tis.project.web.HttpError;
+import tis.project.web.helpers.HttpError;
 import tis.project.web.components.registration.LoginType;
 
 import java.util.Map;

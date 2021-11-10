@@ -2,8 +2,8 @@ package tis.project.web.servlets.login;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tis.project.web.HttpError;
-import tis.project.web.JSON_Parser;
+import tis.project.web.helpers.HttpError;
+import tis.project.web.helpers.JSON_Parser;
 import tis.project.web.components.registration.LoginType;
 import tis.project.web.components.users.dto.UserDTO;
 import tis.project.web.servlets.registratinon.Registration;
@@ -13,10 +13,12 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.Objects;
 
 import static tis.project.web.components.users.UserResources.login;
+import static tis.project.web.helpers.Sessions.removeHTTPOnly;
 import static tis.project.web.servlets.login.LoginServices.validateLoginData;
 
 @WebServlet(name = "loginServlet", urlPatterns = "/api/login")
@@ -36,10 +38,8 @@ public class LogIn extends HttpServlet {
 			resp.setStatus(400);
 			return;
 		}
-
-		HttpSession session = req.getSession();
+		HttpSession session = req.getSession(true);
 		String sessionId = session.getId();
-
 		LoginType loginType = (LoginType) validateData[1];
 		Object[] list = login(loginType.getEmail(), loginType.getPassword(), sessionId);
 		if (Objects.nonNull(list[0])) {
@@ -49,10 +49,19 @@ public class LogIn extends HttpServlet {
 			return;
 		}
 		session.setMaxInactiveInterval(-1);
+		session.setAttribute("SameSite", "None");
 		UserDTO ud = (UserDTO) list[1];
 		session.setAttribute("user_dto", ud);
+
 		pw.write("{\"user_id\": " + ud.getId() + " }");
 		resp.setStatus(200);
+		System.out.println(sessionId);
+		removeHTTPOnly(resp);
+		Enumeration<String> z = session.getAttributeNames();
+		while (z.hasMoreElements())
+			System.out.println(z.nextElement());
 	}
+
+
 
 }
