@@ -1,4 +1,4 @@
-package tis.project.web;
+package tis.project.web.helpers;
 
 import lombok.Getter;
 import lombok.ToString;

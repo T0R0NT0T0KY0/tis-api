@@ -1,7 +1,7 @@
 package migration;
 
 import org.flywaydb.core.Flyway;
-import tis.project.web.Envs;
+import tis.project.web.helpers.Envs;
 
 public class Migration {
 	public static void main(String[] args) {

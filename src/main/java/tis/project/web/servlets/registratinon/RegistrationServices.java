@@ -1,6 +1,6 @@
 package tis.project.web.servlets.registratinon;
 
-import tis.project.web.HttpError;
+import tis.project.web.helpers.HttpError;
 import tis.project.web.components.registration.RegisterType;
 import tis.project.web.components.users.dto.UserActiveTypeDTO;
 
